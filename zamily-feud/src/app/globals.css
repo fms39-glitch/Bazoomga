@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0d0d1a;
+  --foreground: #e8e8f0;
+}
+
+body {
+  color: var(--foreground);
+  background: radial-gradient(circle at top, #151530 0%, #0d0d1a 55%);
+  min-height: 100vh;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-zinc-800 bg-[#161628] p-6 shadow-xl;
+  }
+  .input {
+    @apply w-full rounded-lg border border-zinc-700 bg-[#0d0d1a] px-4 py-3 text-sm text-white outline-none focus:border-sky-500;
+  }
+  .btn-primary {
+    @apply rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500;
+  }
+  .btn-secondary {
+    @apply rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-800;
+  }
+  .btn-danger {
+    @apply rounded-lg bg-red-800 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700;
+  }
+  .timer {
+    @apply mx-auto flex w-40 flex-col items-center justify-center rounded-full border-4 border-sky-700 bg-sky-950/40 py-8;
+  }
+  .timer-urgent {
+    @apply border-red-500 bg-red-950/40 animate-pulse;
+  }
+  .timer-number {
+    @apply text-6xl font-black leading-none text-white;
+  }
+}
