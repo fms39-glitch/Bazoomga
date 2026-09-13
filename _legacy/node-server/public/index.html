@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zamily Feud</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0d0d1a;
+      color: #e8e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+    }
+
+    h1 { font-size: 2rem; color: #7eb8ff; letter-spacing: 2px; margin: 16px 0 4px; }
+    #status { font-size: 12px; color: #666; margin-bottom: 16px; }
+
+    .card {
+      background: #161628;
+      border: 1px solid #2a2a44;
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 580px;
+      margin: 8px 0;
+    }
+    .card h2 { font-size: 1.2rem; color: #a0c4ff; margin-bottom: 16px; }
+
+    .hidden { display: none !important; }
+
+    input[type="text"] {
+      background: #0d0d1a;
+      border: 1px solid #3a3a5c;
+      color: #e8e8f0;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 15px;
+      width: 100%;
+      margin-bottom: 10px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input[type="text"]:focus { border-color: #7eb8ff; }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-primary { background: #3a6fe8; color: #fff; }
+    .btn-primary:hover { background: #2c59c8; }
+    .btn-secondary { background: #2a2a44; color: #a0c4ff; border: 1px solid #3a3a5c; }
+    .btn-secondary:hover { background: #333355; }
+    .btn-danger { background: #8b2020; color: #fff; }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+
+    /* User list */
+    .user-list { list-style: none; margin: 8px 0; }
+    .user-list li {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 0; border-bottom: 1px solid #1e1e34; font-size: 14px;
+    }
+    .role-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 99px; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .role-PLAYER { background: #1a3a6e; color: #7eb8ff; }
+    .role-AUDIENCE { background: #1a3a1a; color: #7eff9e; }
+    .role-HOST { background: #3a1a3a; color: #e07eff; }
+
+    /* Poll view */
+    .question-block { margin: 12px 0; }
+    .question-block label { display: block; font-size: 14px; color: #a0c4ff; margin-bottom: 6px; }
+    .poll-progress {
+      text-align: center; padding: 12px;
+      background: #0d1a2a; border-radius: 8px;
+      font-size: 14px; color: #7eb8ff; margin-bottom: 12px;
+    }
+    .progress-bar-wrap { background: #0d0d1a; border-radius: 99px; height: 6px; margin-top: 6px; overflow: hidden; }
+    .progress-bar { height: 6px; background: #3a6fe8; border-radius: 99px; transition: width .4s ease; }
+
+    /* Board */
+    .board { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+    .board-row {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #0d1a3a; border: 2px solid #1e3a6e;
+      padding: 12px 20px; border-radius: 8px;
+      font-size: 18px; font-weight: 700; letter-spacing: 1px;
+      transition: all .3s ease;
+    }
+    .board-row.revealed {
+      background: #0a2a0a; border-color: #2a6e2a; color: #7eff9e;
+      transform: scale(1.01);
+    }
+    .board-row .points { font-size: 13px; font-weight: 400; color: #888; }
+    .board-row.revealed .points { color: #7eff9e; }
+
+    /* Host log / TTS */
+    #host-box {
+      background: #0d0d1a; border: 1px solid #2a2a44;
+      border-radius: 8px; padding: 14px; margin-top: 14px;
+    }
+    #host-box h3 { font-size: 12px; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    #host-log { max-height: 130px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+    .host-msg {
+      font-size: 14px; color: #c0e0ff; padding: 4px 0;
+      border-bottom: 1px solid #1a1a2e; animation: fadeIn .3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    /* Mute toggle */
+    #mute-btn {
+      position: fixed; bottom: 20px; right: 20px;
+      width: 48px; height: 48px; border-radius: 50%;
+      background: #1e1e34; border: 1px solid #3a3a5c;
+      font-size: 20px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background .2s; z-index: 100;
+    }
+    #mute-btn:hover { background: #2a2a44; }
+
+    /* Admin panel */
+    #admin-panel {
+      position: fixed; top: 0; right: 0; width: 260px;
+      background: #110a1a; border-left: 2px solid #5a1a8a;
+      height: 100vh; padding: 20px 16px;
+      display: flex; flex-direction: column; gap: 10px;
+      z-index: 200; overflow-y: auto;
+    }
+    #admin-panel h2 { font-size: 14px; color: #e07eff; text-transform: uppercase; letter-spacing: 1px; }
+    #admin-panel .admin-stat { font-size: 12px; color: #888; }
+    #admin-panel .admin-stat span { color: #e07eff; font-weight: 700; }
+    .admin-section { border-top: 1px solid #2a1a3a; padding-top: 10px; }
+    .admin-section h3 { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+
+    /* Waiting screen */
+    .waiting-msg { text-align: center; padding: 30px 0; color: #555; font-size: 14px; }
+    .waiting-msg span { display: block; font-size: 2rem; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <h1>⚡ ZAMILY FEUD</h1>
+  <div id="status">Connecting...</div>
+
+  <!-- LOBBY: Name + Role -->
+  <div id="lobby-view" class="card hidden">
+    <h2>Join the Game</h2>
+    <input type="text" id="player-name" placeholder="Your name..." autocomplete="off" />
+    <div class="btn-row">
+      <button class="btn-primary" onclick="joinLobby('PLAYER')">🎮 Join as Player</button>
+      <button class="btn-secondary" onclick="joinLobby('AUDIENCE')">👥 Join as Audience</button>
+    </div>
+  </div>
+
+  <!-- WAITING: Post-join lobby -->
+  <div id="waiting-view" class="card hidden">
+    <h2>Lobby</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:12px;">
+      Your role: <span id="my-role-badge" class="role-badge"></span>
+    </p>
+    <ul id="user-list" class="user-list"></ul>
+    <p id="waiting-hint" style="font-size:13px;color:#555;margin-top:12px;"></p>
+  </div>
+
+  <!-- POLLING: Audience fills answers, Players wait -->
+  <div id="polling-view" class="card hidden">
+    <h2>📋 Survey Time!</h2>
+    <div id="poll-progress-box" class="poll-progress hidden">
+      <span id="poll-progress-text">0 / 0 answered</span>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="poll-progress-bar" style="width:0%"></div></div>
+    </div>
+
+    <div id="audience-poll" class="hidden">
+      <p style="font-size:13px;color:#a0c4ff;margin-bottom:14px;">Answer quickly — as soon as everyone submits, the game begins!</p>
+      <div id="questions-container"></div>
+      <button class="btn-primary" onclick="submitPoll()">✅ Submit Answers</button>
+    </div>
+
+    <div id="player-poll-wait" class="hidden">
+      <div class="waiting-msg"><span>⏳</span>The audience is answering the survey...<br/>Stand by — the game starts automatically!</div>
+    </div>
+  </div>
+
+  <!-- GAME BOARD -->
+  <div id="game-view" class="card hidden">
+    <h2 id="current-question" style="font-size:16px;margin-bottom:12px;"></h2>
+    <div class="board" id="board"></div>
+
+    <div id="player-controls" class="hidden" style="margin-top:16px;">
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="guess-input" placeholder="Type your guess..." onkeydown="if(event.key==='Enter') submitGuess()" style="margin:0;" />
+        <button class="btn-primary" onclick="submitGuess()" style="white-space:nowrap;">Guess →</button>
+      </div>
+    </div>
+    <div id="audience-watch" class="hidden">
+      <p style="font-size:13px;color:#555;margin-top:10px;text-align:center;">👀 Watching — your answers are on that board!</p>
+    </div>
+
+    <div id="host-box">
+      <h3>🎙 AI Host</h3>
+      <div id="host-log"></div>
+    </div>
+  </div>
+
+  <!-- Mute button (always visible once in game) -->
+  <button id="mute-btn" class="hidden" onclick="toggleMute()" title="Toggle voice">🔊</button>
+
+  <!-- ADMIN PANEL (visible only with ?admin=true) -->
+  <div id="admin-panel" class="hidden">
+    <h2>⚙ Admin Panel</h2>
+    <div class="admin-stat">Phase: <span id="admin-phase">LOBBY</span></div>
+    <div class="admin-stat">Connected: <span id="admin-connected">0</span></div>
+    <div class="admin-stat">Audience submitted: <span id="admin-submitted">0/0</span></div>
+
+    <div class="admin-section">
+      <h3>Controls</h3>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn-primary" onclick="adminStartPolling()">🎲 Start Polling</button>
+        <button class="btn-secondary" onclick="adminForceStart(0)">▶ Force Start Q1</button>
+        <button class="btn-secondary" onclick="adminForceStart(1)">▶ Force Start Q2</button>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <h3>Connected Users</h3>
+      <ul id="admin-user-list" class="user-list" style="font-size:12px;"></ul>
+    </div>
+  </div>
+
+  <script>
+    // ─── State ──────────────────────────────────────────────────────────────
+    let ws, myRole = null, myName = null, isMuted = false;
+    let pollQuestions = [], audioQueue = Promise.resolve();
+    const isAdmin = new URLSearchParams(window.location.search).has('admin');
+
+    // ─── Init ────────────────────────────────────────────────────────────────
+    if (isAdmin) {
+      document.getElementById('admin-panel').classList.remove('hidden');
+    }
+
+    function connect() {
+      ws = new WebSocket(`ws://${window.location.host}`);
+      ws.onopen = () => {
+        document.getElementById('status').textContent = '🟢 Connected';
+        if (isAdmin) {
+          // Admin auto-joins as HOST
+          myRole = 'HOST'; myName = 'Admin';
+          ws.send(JSON.stringify({ type: 'join_lobby', name: 'Admin', role: 'HOST' }));
+          showView(null); // no view for admin — they only see the panel
+        } else {
+          showView('lobby-view');
+        }
+      };
+      ws.onclose = () => { document.getElementById('status').textContent = '🔴 Disconnected — refresh to reconnect'; };
+      ws.onmessage = e => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'lobby_update') handleLobbyUpdate(msg);
+        else if (msg.type === 'start_polling') handleStartPolling(msg.questions);
+        else if (msg.type === 'poll_progress') handlePollProgress(msg.submitted, msg.total);
+        else if (msg.type === 'board_update') handleBoardUpdate(msg.question, msg.board);
+        else if (msg.type === 'host_line') handleHostLine(msg.text);
+        else if (msg.type === 'guess_result') handleGuessResult(msg);
+      };
+    }
+
+    // ─── Views ───────────────────────────────────────────────────────────────
+    const views = ['lobby-view', 'waiting-view', 'polling-view', 'game-view'];
+    function showView(id) {
+      views.forEach(v => document.getElementById(v).classList.add('hidden'));
+      if (id) document.getElementById(id).classList.remove('hidden');
+    }
+
+    // ─── Lobby ───────────────────────────────────────────────────────────────
+    function joinLobby(role) {
+      myName = document.getElementById('player-name').value.trim() || 'Anonymous';
+      myRole = role;
+      ws.send(JSON.stringify({ type: 'join_lobby', name: myName, role }));
+    }
+
+    function handleLobbyUpdate(msg) {
+      updateAdminPanel(msg);
+      if (isAdmin) return;
+
+      // Render user list
+      const ul = document.getElementById('user-list');
+      ul.innerHTML = msg.users.map(u =>
+        `<li><span class="role-badge role-${u.role}">${u.role}</span> ${escHtml(u.name)}</li>`
+      ).join('');
+
+      if (!myRole) return; // haven't joined yet
+
+      // Update my badge
+      const badge = document.getElementById('my-role-badge');
+      badge.textContent = myRole;
+      badge.className = `role-badge role-${myRole}`;
+
+      if (msg.phase === 'LOBBY') {
+        showView('waiting-view');
+        document.getElementById('waiting-hint').textContent =
+          myRole === 'AUDIENCE'
+            ? 'Wait for the host to start the survey.'
+            : 'Wait for the host to start the survey. You will be a PLAYER.';
+      } else if (msg.phase === 'POLLING') {
+        showView('polling-view');
+      } else if (msg.phase === 'PLAYING') {
+        showView('game-view');
+      }
+    }
+
+    // ─── Polling ─────────────────────────────────────────────────────────────
+    function handleStartPolling(questions) {
+      pollQuestions = questions;
+      showView('polling-view');
+      document.getElementById('poll-progress-box').classList.remove('hidden');
+
+      if (myRole === 'AUDIENCE') {
+        document.getElementById('audience-poll').classList.remove('hidden');
+        document.getElementById('questions-container').innerHTML = questions.map((q, i) => `
+          <div class="question-block">
+            <label>${i + 1}. ${escHtml(q)}</label>
+            <input type="text" id="poll-ans-${i}" placeholder="Your answer..." autocomplete="off" />
+          </div>
+        `).join('');
+      } else {
+        document.getElementById('player-poll-wait').classList.remove('hidden');
+      }
+    }
+
+    function handlePollProgress(submitted, total) {
+      const pct = total > 0 ? Math.round((submitted / total) * 100) : 0;
+      document.getElementById('poll-progress-text').textContent = `${submitted} / ${total} answered`;
+      document.getElementById('poll-progress-bar').style.width = pct + '%';
+      if (isAdmin) document.getElementById('admin-submitted').textContent = `${submitted}/${total}`;
+    }
+
+    function submitPoll() {
+      const answers = pollQuestions.map((_, i) => (document.getElementById(`poll-ans-${i}`)?.value || ''));
+      ws.send(JSON.stringify({ type: 'submit_poll_answers', answers }));
+      document.getElementById('audience-poll').innerHTML =
+        '<div class="waiting-msg"><span>✅</span>Answers submitted!<br/>Game starts automatically when everyone is done.</div>';
+    }
+
+    // ─── Game Board ──────────────────────────────────────────────────────────
+    function handleBoardUpdate(question, board) {
+      showView('game-view');
+      document.getElementById('mute-btn').classList.remove('hidden');
+      document.getElementById('current-question').textContent = question || '';
+      document.getElementById('board').innerHTML = board.map((b, i) =>
+        `<div class="board-row${b.revealed ? ' revealed' : ''}">
+          <span>${b.revealed ? b.label.toUpperCase() : '???'}</span>
+          <span class="points">${b.revealed ? b.count : ''}</span>
+        </div>`
+      ).join('');
+
+      if (myRole === 'PLAYER') {
+        document.getElementById('player-controls').classList.remove('hidden');
+      } else {
+        document.getElementById('audience-watch').classList.remove('hidden');
+      }
+    }
+
+    function submitGuess() {
+      const input = document.getElementById('guess-input');
+      const guess = input.value.trim();
+      if (guess) { ws.send(JSON.stringify({ type: 'guess', guess })); input.value = ''; }
+    }
+
+    function handleGuessResult(msg) {
+      const input = document.getElementById('guess-input');
+      input.style.borderColor = msg.result === 'hit' ? '#2a6e2a' : '#6e2a2a';
+      setTimeout(() => { input.style.borderColor = ''; }, 800);
+    }
+
+    // ─── TTS / Host line ─────────────────────────────────────────────────────
+    function handleHostLine(text) {
+      // Add to visual log
+      const log = document.getElementById('host-log');
+      const el = document.createElement('div');
+      el.className = 'host-msg';
+      el.textContent = text;
+      log.appendChild(el);
+      log.scrollTop = log.scrollHeight;
+
+      // Queue TTS playback (don't overlap)
+      audioQueue = audioQueue.then(() => speakText(text));
+    }
+
+    async function speakText(text) {
+      if (isMuted) return;
+      try {
+        const resp = await fetch(`/api/tts?text=${encodeURIComponent(text)}`);
+        if (!resp.ok) throw new Error('TTS failed');
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        await new Promise((resolve, reject) => {
+          const audio = new Audio(url);
+          audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+          audio.onerror = reject;
+          audio.play().catch(reject);
+        });
+      } catch {
+        // Fallback: browser TTS
+        if (!window.speechSynthesis) return;
+        await new Promise(resolve => {
+          const u = new SpeechSynthesisUtterance(text);
+          u.onend = resolve;
+          window.speechSynthesis.speak(u);
+        });
+      }
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      document.getElementById('mute-btn').textContent = isMuted ? '🔇' : '🔊';
+      if (isMuted) window.speechSynthesis?.cancel();
+    }
+
+    // ─── Admin ───────────────────────────────────────────────────────────────
+    function updateAdminPanel(msg) {
+      if (!isAdmin) return;
+      document.getElementById('admin-phase').textContent = msg.phase;
+      document.getElementById('admin-connected').textContent = msg.users.length;
+      document.getElementById('admin-user-list').innerHTML = msg.users.map(u =>
+        `<li><span class="role-badge role-${u.role}">${u.role}</span> ${escHtml(u.name)}</li>`
+      ).join('');
+    }
+
+    function adminStartPolling() {
+      ws.send(JSON.stringify({ type: 'host_start_polling' }));
+    }
+
+    function adminForceStart(index) {
+      ws.send(JSON.stringify({ type: 'host_start_game', questionIndex: index }));
+    }
+
+    // ─── Utils ────────────────────────────────────────────────────────────────
+    function escHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    connect();
+  </script>
+</body>
+</html>
